@@ -1,14 +1,101 @@
-body {
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+:root {
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  font-family: sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.App {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  max-height: 100%;
+  display: grid;
+  grid-template-rows: 40px calc(100% - 80px) 40px;
+  grid-template-columns: 1fr 2fr;
+  grid-template-areas:
+    "header header"
+    "main main"
+    "footer footer";
+}
+
+.Header {
+  width: 100%;
+  height: 40px;
+  background-color: #dedede;
+  grid-area: header;
+  padding: 5px 15px;
+}
+
+.Header__heading {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.Main {
+  grid-area: main;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  grid-template-areas: "config result";
+}
+
+.Config {
+  grid-area: config;
+  overflow: auto;
+  padding: 5px;
+}
+
+fieldset {
+  border: 1px solid pink;
+  padding: 10px;
+}
+
+fieldset legend {
+  color: pink;
+  font-weight: bold;
+}
+
+.Result {
+  grid-area: result;
+  padding: 5px;
+  background-color: #383838;
+  color: pink;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+
+.Result__placeholder {
+  color: grey;
+}
+
+.HeaderDirective {
+  float: left;
+  clear: both;
+}
+
+.HeaderDirective:not(:last-child):after {
+  content: ",";
+}
+
+.Footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  grid-area: footer;
+  padding: 5px 15px;
+}
+
+.Footer__resources span {
+  display: inline-block;
+  margin-right: 5px;
 }
