@@ -1,4 +1,5 @@
 :root {
+  --colour-grey: #383838;
 }
 
 html,
@@ -7,10 +8,27 @@ body,
   width: 100%;
   height: 100%;
   font-family: sans-serif;
+  color: var(--colour-grey);
 }
 
 * {
   box-sizing: border-box;
+}
+
+a,
+a:active,
+a:visited {
+  color: white;
+}
+
+a {
+  text-decoration: none;
+  border-bottom: 1px dotted white;
+}
+
+a:hover {
+  text-decoration: none;
+  border-bottom: 1px solid white;
 }
 
 .App {
@@ -30,14 +48,34 @@ body,
 .Header {
   width: 100%;
   height: 40px;
-  background-color: #dedede;
+  background-color: var(--colour-grey);
   grid-area: header;
-  padding: 5px 15px;
+  padding: 5px 8px;
+  color: pink;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .Header__heading {
   margin: 0;
   font-size: 1.5rem;
+}
+
+.Menu {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.Menu__item {
+  float: left;
+}
+
+.Menu__item:not(:last-child) {
+  padding-right: 10px;
+  margin-right: 10px;
+  border-right: 1px solid pink;
 }
 
 .Main {
@@ -53,25 +91,52 @@ body,
   padding: 5px;
 }
 
-fieldset {
-  border: 1px solid pink;
-  padding: 10px;
+.Fieldset:not(:last-child) {
+  margin-bottom: 5px;
 }
 
-fieldset legend {
+.Fieldset__header {
+  cursor: pointer;
   color: pink;
   font-weight: bold;
+  background-color: var(--colour-grey);
+  padding: 5px 10px;
+  border-radius: 5px;
+  z-index: 1;
+  position: relative;
+  border-bottom: 1px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.Fieldset__body {
+  padding: 5px 10px;
+  padding-top: 10px;
+  margin-top: -10px;
+  border-radius: 5px;
+  background-color: lightgrey;
+  z-index: 0;
+}
+
+.Fieldset__fields {
+  border-top: 1px solid white;
+  padding: 10px 0 5px 0;
 }
 
 .Result {
   grid-area: result;
   padding: 5px;
-  background-color: #383838;
+  background-color: var(--colour-grey);
   color: pink;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 3rem;
+}
+
+.Result__header {
+  margin-top: -40px;
 }
 
 .Result__placeholder {
@@ -92,7 +157,9 @@ fieldset legend {
   align-items: center;
   justify-content: space-between;
   grid-area: footer;
-  padding: 5px 15px;
+  padding: 5px 8px;
+  background-color: var(--colour-grey);
+  color: white;
 }
 
 .Footer__resources span {

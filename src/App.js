@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-no-comment-textnodes */
-import React, { Component } from "react";
+import React, { Component, useState } from "react";
 import copyToClipboard from "clipboard-copy";
 
 import "normalize.css/normalize.css";
@@ -8,10 +8,10 @@ import "./index.css";
 const Directives = {
   public: "public",
   private: "private",
-  "no-cache": "no-cache",
-  "only-if-cached": "only-if-cached",
   "max-age": "max-age",
   "s-maxage": "s-maxage",
+  "no-cache": "no-cache",
+  "only-if-cached": "only-if-cached",
   "max-stale": "max-stale",
   "min-fresh": "min-fresh",
   "stale-while-revalidate": "stale-while-revalidate",
@@ -23,11 +23,26 @@ const Directives = {
   "no-transform": "no-transform"
 };
 
-const directivePriority = Object.keys(Directives);
+const directivePriorities = Object.keys(Directives);
+
+const initialOpenDirectives = directivePriorities.slice(0, 4);
 
 const styles = {
   hide: hide => (hide ? { display: "none" } : {})
 };
+
+function readInDirectives() {
+  const parts = window.location.search.replace(/^\?/, "").split("&");
+  const params = parts.reduce((params, part) => {
+    const [key, val] = part.split("=");
+    return { ...params, [key]: val };
+  }, {});
+  try {
+    return params.s ? JSON.parse(atob(params.s)) : [];
+  } catch (err) {
+    return [];
+  }
+}
 
 function Directive({ name, args = [] }) {
   return (
@@ -40,37 +55,36 @@ function Directive({ name, args = [] }) {
 }
 
 function Fieldset({ title, description, active, fields }) {
+  const [open, setOpen] = useState(initialOpenDirectives.includes(title));
+
   return (
-    <fieldset>
-      <legend>{title}</legend>
-      <div>
-        <p>{description}</p>
-        <div>{fields(active)}</div>
+    <div className="Fieldset">
+      <div className="Fieldset__header" onClick={() => setOpen(!open)}>
+        <span>{title}</span>
+        <span className="Fieldset__header-open-icon">{open ? "–" : "+"}</span>
       </div>
-    </fieldset>
+      <div className="Fieldset__body" style={styles.hide(!open)}>
+        <div className="Fieldset__description">{description}</div>
+        <div className="Fieldset__fields">{fields(active)}</div>
+      </div>
+    </div>
   );
 }
 
 export default class App extends Component {
   state = {
-    directives: [
-      // {
-      //   name: Directives.public
-      // },
-      // {
-      //   name: Directives["max-age"],
-      //   args: [60 * 60 * 24]
-      // }
-    ]
+    directives: readInDirectives()
   };
 
   setDirectives(directives) {
-    directives = directives.sort((a, b) => {
-      return (
-        directivePriority.indexOf(a.name) - directivePriority.indexOf(b.name)
-      );
+    this.setState({
+      directives: directives.sort((a, b) => {
+        return (
+          directivePriorities.indexOf(a.name) -
+          directivePriorities.indexOf(b.name)
+        );
+      })
     });
-    this.setState({ directives });
   }
 
   hasDirective(directive) {
@@ -82,7 +96,7 @@ export default class App extends Component {
     if (!directive) {
       return null;
     }
-    return directive.args && directive.args[argIdx];
+    return (directive.args && directive.args[argIdx]) || "";
   }
 
   copyToClipboard() {
@@ -101,10 +115,40 @@ export default class App extends Component {
   }
 
   render() {
+    const shareUrl = `https://cache-control.now.sh?s=${btoa(
+      JSON.stringify(this.state.directives)
+    )}`;
+
     return (
       <div className="App">
         <header className="Header">
-          <h1 className="Header__heading">Cache-Control Header Builder</h1>
+          <div>
+            <h1 className="Header__heading">Cache-Control Header Builder</h1>
+          </div>
+          <ul className="Menu">
+            <li className="Menu__item">
+              <a
+                href={shareUrl}
+                onClick={evt => {
+                  evt.preventDefault();
+                  copyToClipboard(shareUrl);
+                }}
+              >
+                Share
+              </a>
+            </li>
+            <li className="Menu__item">
+              <a
+                href="#"
+                onClick={evt => {
+                  evt.preventDefault();
+                  this.copyToClipboard();
+                }}
+              >
+                Copy
+              </a>
+            </li>
+          </ul>
         </header>
         <main className="Main">
           <form action="#" className="Config">
@@ -291,15 +335,39 @@ export default class App extends Component {
                 </label>
               ]}
             />
-            <fieldset>
-              <legend>no-store</legend>
-              <div>
+            <Fieldset
+              title={Directives["no-store"]}
+              description={
                 <p>
                   The cache should not store anything about the client request
                   or server response.
                 </p>
-              </div>
-            </fieldset>
+              }
+              active={this.hasDirective(Directives["no-store"])}
+              fields={active => [
+                <label key={0}>
+                  <input
+                    name={Directives["no-store"]}
+                    type="checkbox"
+                    checked={active}
+                    onChange={() => {
+                      let directives = this.state.directives;
+                      if (active) {
+                        directives = directives.filter(
+                          d => d.name !== Directives["no-store"]
+                        );
+                      } else {
+                        directives.push({
+                          name: Directives["no-store"]
+                        });
+                      }
+                      this.setDirectives(directives);
+                    }}
+                  />
+                  no-store
+                </label>
+              ]}
+            />
             <fieldset>
               <legend>no-cache</legend>
               <div>
@@ -410,7 +478,14 @@ export default class App extends Component {
             </span>
           </div>
           <div className="Footer__credit">
-            created by <a href="https://github.com/sdgluck">sdgluck</a>
+            created by{" "}
+            <a
+              href="https://github.com/sdgluck"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              sdgluck
+            </a>
           </div>
         </footer>
       </div>
