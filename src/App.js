@@ -46,24 +46,30 @@ function readInDirectives() {
   }
 }
 
+function createHeaderArg(directives) {
+  let headerArg = "";
+  for (let i = 0; i < directives.length; i++) {
+    const directive = directives[i];
+    headerArg +=
+      directive.name +
+      (directive.args && directive.args.length
+        ? " " + directive.args.join(" ")
+        : "");
+    if (directives.length > 1 && i !== directives.length - 1) {
+      headerArg += ", ";
+    }
+  }
+  return headerArg;
+}
+
 const libraryCode = {
   express: directives => {
     let setHeaderCode = "res.set('Cache-Control', '";
-    for (let i = 0; i < directives.length; i++) {
-      const directive = directives[i];
-      setHeaderCode +=
-        directive.name +
-        (directive.args && directive.args.length
-          ? " " + directive.args.join(" ")
-          : "");
-      if (directives.length > 1 && i !== directives.length - 1) {
-        setHeaderCode += ", ";
-      }
-    }
+    setHeaderCode += createHeaderArg(directives);
     setHeaderCode += "');";
     let code = "// for all responses\n";
     code += "app.use((req, res, next) => {\n";
-    code += "  " + setHeaderCode + "\n";
+    code += `  ${setHeaderCode}\n`;
     code += "  next();\n";
     code += "});\n\n";
     code += "// for single response\n";
@@ -71,7 +77,60 @@ const libraryCode = {
     return code;
   },
   koa: directives => {
-    return "";
+    let setHeaderCode = "ctx.set('Cache-Control', '";
+    setHeaderCode += createHeaderArg(directives);
+    setHeaderCode += "');";
+    let code = "// for all responses\n";
+    code += "app.use(async (ctx, next) => {\n";
+    code += `  ${setHeaderCode}\n`;
+    code += "  await next();\n";
+    code += "});\n\n";
+    code += "// for single response\n";
+    code += setHeaderCode;
+    return code;
+  },
+  hapi: directives => {
+    const headerArg = createHeaderArg(directives);
+    const code = `\
+// for all responses
+server.ext('onPreResponse', (request, reply) => {
+  request.response.header('Cache-Control', '${headerArg}');
+  reply();
+});
+
+// for single response
+response.header('Cache-Control', '${headerArg}');`;
+    return code;
+  },
+  "hapi v17": directives => {
+    const headerArg = createHeaderArg(directives);
+    return `\
+// for all responses
+server.route({  
+  method: 'GET',
+  path: '*',
+  handler: (request, h) => {
+    const response = h.response();
+    response.code(200);
+    response.header('Cache-Control', '${headerArg}');
+    return response;
+  }
+});
+
+// for single response
+response.header('Cache-Control', '${headerArg}');`;
+  },
+  fastify: directives => {
+    const headerArg = createHeaderArg(directives);
+    return `\
+// for all responses
+fastify.use('*', (request, reply, next) => {
+  reply.header('Cache-Control', '${headerArg}');
+  next();
+});
+
+// for single reponse
+reply.header('Cache-Control', '${headerArg}')`;
   }
 };
 
@@ -148,7 +207,8 @@ export default class App extends Component {
   }
 
   render() {
-    const shareUrl = `https://cache-control.now.sh?s=${btoa(
+    const domain = window.location.protocol + "//" + window.location.host;
+    const shareUrl = `${domain}?s=${btoa(
       JSON.stringify(this.state.directives)
     )}`;
 
@@ -172,16 +232,13 @@ export default class App extends Component {
               </a>
             </li>
             <li className="Menu__item">
-              <a
+              <button
+                className="Anchor"
                 title="Copy the header text to your clipboard"
-                href="#"
-                onClick={evt => {
-                  evt.preventDefault();
-                  this.copyToClipboard();
-                }}
+                onClick={() => this.copyToClipboard()}
               >
                 Copy
-              </a>
+              </button>
             </li>
           </ul>
         </header>
@@ -501,7 +558,7 @@ export default class App extends Component {
                     })
                   }
                 >
-                  Library Code{" "}
+                  Router Library Code{" "}
                   <span>({this.state.showLibraryCode ? "hide" : "show"})</span>
                 </div>
                 <div>
