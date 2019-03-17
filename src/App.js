@@ -524,6 +524,8 @@ export default class App extends Component {
               </div>
               <div style={styles.hide(!this.state.showLibraryCode)}>
                 <SyntaxHighlighter
+                  showLineNumbers
+                  lineNumberStyle={{ color: "lightgrey" }}
                   className="ResultCode__code"
                   language="javascript"
                   style={docco}
