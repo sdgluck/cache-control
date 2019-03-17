@@ -126,20 +126,24 @@ a:hover {
 
 .Result {
   grid-area: result;
-  padding: 5px;
+  display: grid;
+  grid-template-rows: 2fr auto;
+  grid-template-areas: "result_header" "result_code";
   background-color: var(--colour-grey);
+}
+
+.ResultHeader {
+  padding: 5px;
+  grid-area: result_header;
+  margin-top: -40px;
   color: pink;
-  display: flex;
+  font-size: 3rem;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
+  display: flex;
 }
 
-.Result__header {
-  margin-top: -40px;
-}
-
-.Result__placeholder {
+.ResultHeader__placeholder {
   color: grey;
 }
 
@@ -150,6 +154,41 @@ a:hover {
 
 .HeaderDirective:not(:last-child):after {
   content: ",";
+}
+
+.ResultCode {
+  grid-area: result_code;
+}
+
+.ResultCode__header {
+  height: 40px;
+  background-color: orange;
+  color: white;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-weight: bold;
+  justify-content: space-between;
+}
+
+.ResultCode__header-toggle {
+  cursor: pointer;
+}
+
+.ResultCode__header-toggle span {
+  border-bottom: 1px dotted white;
+}
+
+.ResultCode__header-select {
+  border: 0;
+  border-radius: 5px;
+  padding: 3px 5px;
+}
+
+.ResultCode__code {
+  background-color: white;
+  margin: 0;
 }
 
 .Footer {

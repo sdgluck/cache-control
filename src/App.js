@@ -1,6 +1,8 @@
 /* eslint-disable react/jsx-no-comment-textnodes */
 import React, { Component, useState } from "react";
+import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import copyToClipboard from "clipboard-copy";
+import SyntaxHighlighter from "react-syntax-highlighter";
 
 import "normalize.css/normalize.css";
 import "./index.css";
@@ -44,6 +46,35 @@ function readInDirectives() {
   }
 }
 
+const libraryCode = {
+  express: directives => {
+    let setHeaderCode = "res.set('Cache-Control', '";
+    for (let i = 0; i < directives.length; i++) {
+      const directive = directives[i];
+      setHeaderCode +=
+        directive.name +
+        (directive.args && directive.args.length
+          ? " " + directive.args.join(" ")
+          : "");
+      if (directives.length > 1 && i !== directives.length - 1) {
+        setHeaderCode += ", ";
+      }
+    }
+    setHeaderCode += "');";
+    let code = "// for all responses\n";
+    code += "app.use((req, res, next) => {\n";
+    code += "  " + setHeaderCode + "\n";
+    code += "  next();\n";
+    code += "});\n\n";
+    code += "// for single response\n";
+    code += setHeaderCode;
+    return code;
+  },
+  koa: directives => {
+    return "";
+  }
+};
+
 function Directive({ name, args = [] }) {
   return (
     <span className="HeaderDirective">
@@ -54,7 +85,7 @@ function Directive({ name, args = [] }) {
   );
 }
 
-function Fieldset({ title, description, active, fields }) {
+function Fieldset({ title, description, active, fields = () => {} }) {
   const [open, setOpen] = useState(initialOpenDirectives.includes(title));
 
   return (
@@ -73,6 +104,8 @@ function Fieldset({ title, description, active, fields }) {
 
 export default class App extends Component {
   state = {
+    showLibraryCode: true,
+    codeLibrary: "express",
     directives: readInDirectives()
   };
 
@@ -128,6 +161,7 @@ export default class App extends Component {
           <ul className="Menu">
             <li className="Menu__item">
               <a
+                title="Copy a shareable link for this header configuration"
                 href={shareUrl}
                 onClick={evt => {
                   evt.preventDefault();
@@ -139,6 +173,7 @@ export default class App extends Component {
             </li>
             <li className="Menu__item">
               <a
+                title="Copy the header text to your clipboard"
                 href="#"
                 onClick={evt => {
                   evt.preventDefault();
@@ -368,18 +403,18 @@ export default class App extends Component {
                 </label>
               ]}
             />
-            <fieldset>
-              <legend>no-cache</legend>
-              <div>
+            <Fieldset
+              title={Directives["no-cache"]}
+              description={
                 <p>
                   Forces caches to submit the request to the origin server for
                   validation before releasing a cached copy.
                 </p>
-              </div>
-            </fieldset>
-            <fieldset>
-              <legend>only-if-cached</legend>
-              <div>
+              }
+            />
+            <Fieldset
+              title={Directives["only-if-cached"]}
+              description={
                 <p>
                   Indicates to not retrieve new data. This being the case, the
                   server wishes the client to obtain a response only once and
@@ -387,71 +422,116 @@ export default class App extends Component {
                   a cached copy and avoid contacting the origin-server to see if
                   a newer copy exists.
                 </p>
-              </div>
-            </fieldset>
-            <fieldset>
-              <legend>must-revalidate</legend>
-              <div>
-                <p>
-                  Where no-cache will immediately revalidate with the server,
-                  and only use a cached copy if the server says it may,
-                  must-revalidate is like no-cache with a grace period.
-                </p>
-                <p>
-                  must-revalidate needs an associated max-age directive; above,
-                  we’ve set it to ten minutes.
-                </p>
-              </div>
-            </fieldset>
-            <fieldset>
-              <legend>proxy-revalidate</legend>
-              <div>
+              }
+            />
+            <Fieldset
+              title={Directives["must-revalidate"]}
+              description={
+                <>
+                  <p>
+                    Where no-cache will immediately revalidate with the server,
+                    and only use a cached copy if the server says it may,
+                    must-revalidate is like no-cache with a grace period.
+                  </p>
+                  <p>
+                    must-revalidate needs an associated max-age directive;
+                    above, we’ve set it to ten minutes.
+                  </p>
+                </>
+              }
+            />
+            <Fieldset
+              title={Directives["proxy-revalidate"]}
+              description={
                 <p>
                   In a similar vein to s-maxage, proxy-revalidate is the
                   public-cache specific version of must-revalidate. It is simply
                   ignored by private caches.
                 </p>
-              </div>
-            </fieldset>
-            <fieldset>
-              <legend>immutable</legend>
-              <div>
+              }
+            />
+            <Fieldset
+              title={Directives["immutable"]}
+              description={
                 <p>
                   immutable is a way of telling the browser that a file will
                   never change—it’s immutable—and therefore never to bother
                   revalidating it. We can completely cut out the overhead of a
                   roundtrip of latency.
                 </p>
-              </div>
-            </fieldset>
-            <fieldset>
-              <legend>stale-while-revalidate</legend>
-              <div>
+              }
+            />
+            <Fieldset
+              title={Directives["stale-while-revalidate"]}
+              description={
                 <p>
                   Indicates that the client is willing to accept a stale
                   response while asynchronously checking in the background for a
                   fresh one. The seconds value indicates for how long the client
                   is willing to accept a stale response.
                 </p>
-              </div>
-            </fieldset>
+              }
+            />
           </form>
           <div className="Result" onClick={() => this.copyToClipboard()}>
-            <pre className="Result__header">
-              Cache-Control:{`\n`}
-              {this.state.directives.map(directive => {
-                return <Directive key={directive.name} {...directive} />;
-              })}
-              {!this.state.directives.length ? (
-                <span className="Result__placeholder">
-                  {"  "}// configure directives
-                  <br />
-                  {"  "}// using the panel
-                  <br />
-                  {"  "}// on the left
-                </span>
-              ) : null}
-            </pre>
+            <div className="ResultHeader">
+              <pre className="ResultHeader__header">
+                Cache-Control:{`\n`}
+                {this.state.directives.map(directive => {
+                  return <Directive key={directive.name} {...directive} />;
+                })}
+                {!this.state.directives.length ? (
+                  <span className="ResultHeader__placeholder">
+                    {"  "}// configure directives
+                    <br />
+                    {"  "}// using the panel
+                    <br />
+                    {"  "}// on the left
+                  </span>
+                ) : null}
+              </pre>
+            </div>
+            <div className="ResultCode">
+              <div className="ResultCode__header">
+                <div
+                  className="ResultCode__header-toggle"
+                  onClick={() =>
+                    this.setState({
+                      showLibraryCode: !this.state.showLibraryCode
+                    })
+                  }
+                >
+                  Library Code{" "}
+                  <span>({this.state.showLibraryCode ? "hide" : "show"})</span>
+                </div>
+                <div>
+                  <select
+                    className="ResultCode__header-select"
+                    value={this.state.codeLibrary}
+                    onChange={evt => {
+                      evt.preventDefault();
+                      this.setState({
+                        showLibraryCode: true,
+                        codeLibrary: evt.target.value
+                      });
+                    }}
+                  >
+                    {Object.keys(libraryCode).map(lib => {
+                      return <option key={lib}>{lib}</option>;
+                    })}
+                  </select>
+                </div>
+              </div>
+              <div style={styles.hide(!this.state.showLibraryCode)}>
+                <SyntaxHighlighter
+                  className="ResultCode__code"
+                  language="javascript"
+                  style={docco}
+                >
+                  {libraryCode[this.state.codeLibrary](this.state.directives)}
+                </SyntaxHighlighter>
+              </div>
+            </div>
           </div>
         </main>
         <footer className="Footer">
