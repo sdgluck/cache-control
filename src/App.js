@@ -4,6 +4,9 @@ import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import copyToClipboard from "clipboard-copy";
 import SyntaxHighlighter from "react-syntax-highlighter";
 
+import libraryCode from "./lib-code";
+import { readInDirectives, createHeaderArg } from "./util";
+
 import "normalize.css/normalize.css";
 import "./index.css";
 
@@ -27,111 +30,16 @@ const Directives = {
 
 const directivePriorities = Object.keys(Directives);
 
-const initialOpenDirectives = directivePriorities.slice(0, 4);
+let initialOpenDirectives = window.location.search.includes("s=")
+  ? readInDirectives().map(d => d.name)
+  : directivePriorities.slice(0, 4);
+
+if (!initialOpenDirectives.length) {
+  initialOpenDirectives = directivePriorities.slice(0, 4);
+}
 
 const styles = {
   hide: hide => (hide ? { display: "none" } : {})
-};
-
-function readInDirectives() {
-  const parts = window.location.search.replace(/^\?/, "").split("&");
-  const params = parts.reduce((params, part) => {
-    const [key, val] = part.split("=");
-    return { ...params, [key]: val };
-  }, {});
-  try {
-    return params.s ? JSON.parse(atob(params.s)) : [];
-  } catch (err) {
-    return [];
-  }
-}
-
-function createHeaderArg(directives) {
-  let headerArg = "";
-  for (let i = 0; i < directives.length; i++) {
-    const directive = directives[i];
-    headerArg +=
-      directive.name +
-      (directive.args && directive.args.length
-        ? " " + directive.args.join(" ")
-        : "");
-    if (directives.length > 1 && i !== directives.length - 1) {
-      headerArg += ", ";
-    }
-  }
-  return headerArg;
-}
-
-const libraryCode = {
-  express: directives => {
-    let setHeaderCode = "res.set('Cache-Control', '";
-    setHeaderCode += createHeaderArg(directives);
-    setHeaderCode += "');";
-    let code = "// for all responses\n";
-    code += "app.use((req, res, next) => {\n";
-    code += `  ${setHeaderCode}\n`;
-    code += "  next();\n";
-    code += "});\n\n";
-    code += "// for single response\n";
-    code += setHeaderCode;
-    return code;
-  },
-  koa: directives => {
-    let setHeaderCode = "ctx.set('Cache-Control', '";
-    setHeaderCode += createHeaderArg(directives);
-    setHeaderCode += "');";
-    let code = "// for all responses\n";
-    code += "app.use(async (ctx, next) => {\n";
-    code += `  ${setHeaderCode}\n`;
-    code += "  await next();\n";
-    code += "});\n\n";
-    code += "// for single response\n";
-    code += setHeaderCode;
-    return code;
-  },
-  hapi: directives => {
-    const headerArg = createHeaderArg(directives);
-    const code = `\
-// for all responses
-server.ext('onPreResponse', (request, reply) => {
-  request.response.header('Cache-Control', '${headerArg}');
-  reply();
-});
-
-// for single response
-response.header('Cache-Control', '${headerArg}');`;
-    return code;
-  },
-  "hapi v17": directives => {
-    const headerArg = createHeaderArg(directives);
-    return `\
-// for all responses
-server.route({  
-  method: 'GET',
-  path: '*',
-  handler: (request, h) => {
-    const response = h.response();
-    response.code(200);
-    response.header('Cache-Control', '${headerArg}');
-    return response;
-  }
-});
-
-// for single response
-response.header('Cache-Control', '${headerArg}');`;
-  },
-  fastify: directives => {
-    const headerArg = createHeaderArg(directives);
-    return `\
-// for all responses
-fastify.use('*', (request, reply, next) => {
-  reply.header('Cache-Control', '${headerArg}');
-  next();
-});
-
-// for single reponse
-reply.header('Cache-Control', '${headerArg}')`;
-  }
 };
 
 function Directive({ name, args = [] }) {
@@ -183,6 +91,29 @@ export default class App extends Component {
     return this.state.directives.find(d => d.name === directive);
   }
 
+  toggleDirective(name, args = [], disables = []) {
+    const active = this.hasDirective(name);
+    let directives = this.state.directives;
+    if (active) {
+      directives = directives.filter(d => d.name !== name);
+    } else {
+      directives = directives.filter(d => !disables.includes(d.name));
+      directives.push({ name, args });
+    }
+    this.setDirectives(directives);
+  }
+
+  updateDirecteArg(evt, name, argIdx) {
+    const active = this.hasDirective(name);
+    if (!active) {
+      return;
+    }
+    const directives = this.state.directives;
+    const directive = directives.find(d => d.name === name);
+    directive.args[argIdx] = evt.target.value;
+    this.setDirectives(directives);
+  }
+
   getDirectiveArg(name, argIdx) {
     const directive = this.state.directives.find(d => d.name === name);
     if (!directive) {
@@ -192,18 +123,7 @@ export default class App extends Component {
   }
 
   copyToClipboard() {
-    const { directives } = this.state;
-    copyToClipboard(
-      "Cache-Control: " +
-        directives.reduce((str, d, i) => {
-          return (
-            str +
-            d.name +
-            (d.args && d.args.length ? " " + d.args.join(" ") : "") +
-            (directives.length > 1 && i !== directives.length - 1 ? ", " : "")
-          );
-        }, "")
-    );
+    copyToClipboard("Cache-Control: " + createHeaderArg(this.state.directives));
   }
 
   render() {
@@ -261,20 +181,13 @@ export default class App extends Component {
                     name={Directives.public}
                     type="checkbox"
                     checked={active}
-                    onChange={() => {
-                      let directives = this.state.directives;
-                      if (active) {
-                        directives = directives.filter(
-                          d => d.name !== Directives.public
-                        );
-                      } else {
-                        directives = directives.filter(
-                          d => d.name !== Directives.private
-                        );
-                        directives.push({ name: Directives.public });
-                      }
-                      this.setDirectives(directives);
-                    }}
+                    onChange={() =>
+                      this.toggleDirective(
+                        Directives.public,
+                        [],
+                        [Directives.private]
+                      )
+                    }
                   />
                   public
                 </label>
@@ -296,20 +209,13 @@ export default class App extends Component {
                     name={Directives.public}
                     type="checkbox"
                     checked={active}
-                    onChange={() => {
-                      let directives = this.state.directives;
-                      if (active) {
-                        directives = directives.filter(
-                          d => d.name !== Directives.private
-                        );
-                      } else {
-                        directives = directives.filter(
-                          d => d.name !== Directives.public
-                        );
-                        directives.push({ name: Directives.private });
-                      }
-                      this.setDirectives(directives);
-                    }}
+                    onChange={() =>
+                      this.toggleDirective(
+                        Directives.private,
+                        [],
+                        [Directives.public]
+                      )
+                    }
                   />
                   private
                 </label>
@@ -331,42 +237,25 @@ export default class App extends Component {
                     name={Directives["max-age"]}
                     type="checkbox"
                     checked={active}
-                    onChange={() => {
-                      let directives = this.state.directives;
-                      if (active) {
-                        directives = directives.filter(
-                          d => d.name !== Directives["max-age"]
-                        );
-                      } else {
-                        directives.push({
-                          name: Directives["max-age"],
-                          args: [60 * 60 * 24]
-                        });
-                      }
-                      this.setDirectives(directives);
-                    }}
+                    onChange={() =>
+                      this.toggleDirective(Directives["max-age"], [
+                        60 * 60 * 24
+                      ])
+                    }
                   />
                   max-age
                 </label>,
                 <label key={1} style={styles.hide(!active)}>
                   <br />
                   <input
-                    name={Directives["max-age"] + "_arg1"}
+                    name={Directives["max-age"] + "_arg0"}
                     type="number"
                     min={0}
                     step={60}
                     value={this.getDirectiveArg(Directives["max-age"], 0)}
-                    onChange={evt => {
-                      if (!active) {
-                        return;
-                      }
-                      const directives = this.state.directives;
-                      const directive = directives.find(
-                        d => d.name === Directives["max-age"]
-                      );
-                      directive.args[0] = evt.target.value;
-                      this.setDirectives(directives);
-                    }}
+                    onChange={evt =>
+                      this.updateDirecteArg(evt, Directives["max-age"], 0)
+                    }
                   />
                 </label>
               ]}
@@ -387,42 +276,25 @@ export default class App extends Component {
                     name={Directives["s-maxage"]}
                     type="checkbox"
                     checked={active}
-                    onChange={() => {
-                      let directives = this.state.directives;
-                      if (active) {
-                        directives = directives.filter(
-                          d => d.name !== Directives["s-maxage"]
-                        );
-                      } else {
-                        directives.push({
-                          name: Directives["s-maxage"],
-                          args: [60 * 60 * 24]
-                        });
-                      }
-                      this.setDirectives(directives);
-                    }}
+                    onChange={() =>
+                      this.toggleDirective(Directives["s-maxage"], [
+                        60 * 60 * 24
+                      ])
+                    }
                   />
                   s-maxage
                 </label>,
                 <label key={1} style={styles.hide(!active)}>
                   <br />
                   <input
-                    name={Directives["s-maxage"] + "_arg1"}
+                    name={Directives["s-maxage"] + "_arg0"}
                     type="number"
                     min={0}
                     step={60}
                     value={this.getDirectiveArg(Directives["s-maxage"], 0)}
-                    onChange={evt => {
-                      if (!active) {
-                        return;
-                      }
-                      const directives = this.state.directives;
-                      const directive = directives.find(
-                        d => d.name === Directives["s-maxage"]
-                      );
-                      directive.args[0] = evt.target.value;
-                      this.setDirectives(directives);
-                    }}
+                    onChange={evt =>
+                      this.updateDirecteArg(evt, Directives["s-maxage"], 0)
+                    }
                   />
                 </label>
               ]}
@@ -442,19 +314,9 @@ export default class App extends Component {
                     name={Directives["no-store"]}
                     type="checkbox"
                     checked={active}
-                    onChange={() => {
-                      let directives = this.state.directives;
-                      if (active) {
-                        directives = directives.filter(
-                          d => d.name !== Directives["no-store"]
-                        );
-                      } else {
-                        directives.push({
-                          name: Directives["no-store"]
-                        });
-                      }
-                      this.setDirectives(directives);
-                    }}
+                    onChange={() =>
+                      this.toggleDirective(Directives["no-store"])
+                    }
                   />
                   no-store
                 </label>
@@ -468,6 +330,20 @@ export default class App extends Component {
                   validation before releasing a cached copy.
                 </p>
               }
+              active={this.hasDirective(Directives["no-cache"])}
+              fields={active => [
+                <label key={0}>
+                  <input
+                    name={Directives["no-cache"]}
+                    type="checkbox"
+                    checked={active}
+                    onChange={() =>
+                      this.toggleDirective(Directives["no-cache"])
+                    }
+                  />
+                  no-cache
+                </label>
+              ]}
             />
             <Fieldset
               title={Directives["only-if-cached"]}
@@ -480,6 +356,20 @@ export default class App extends Component {
                   a newer copy exists.
                 </p>
               }
+              active={this.hasDirective(Directives["only-if-cached"])}
+              fields={active => [
+                <label key={0}>
+                  <input
+                    name={Directives["only-if-cached"]}
+                    type="checkbox"
+                    checked={active}
+                    onChange={() =>
+                      this.toggleDirective(Directives["only-if-cached"])
+                    }
+                  />
+                  only-if-cached
+                </label>
+              ]}
             />
             <Fieldset
               title={Directives["must-revalidate"]}
@@ -496,6 +386,20 @@ export default class App extends Component {
                   </p>
                 </>
               }
+              active={this.hasDirective(Directives["must-revalidate"])}
+              fields={active => [
+                <label key={0}>
+                  <input
+                    name={Directives["must-revalidate"]}
+                    type="checkbox"
+                    checked={active}
+                    onChange={() =>
+                      this.toggleDirective(Directives["must-revalidate"])
+                    }
+                  />
+                  must-revalidate
+                </label>
+              ]}
             />
             <Fieldset
               title={Directives["proxy-revalidate"]}
@@ -506,6 +410,20 @@ export default class App extends Component {
                   ignored by private caches.
                 </p>
               }
+              active={this.hasDirective(Directives["proxy-revalidate"])}
+              fields={active => [
+                <label key={0}>
+                  <input
+                    name={Directives["proxy-revalidate"]}
+                    type="checkbox"
+                    checked={active}
+                    onChange={() =>
+                      this.toggleDirective(Directives["proxy-revalidate"])
+                    }
+                  />
+                  proxy-revalidate
+                </label>
+              ]}
             />
             <Fieldset
               title={Directives["immutable"]}
@@ -517,6 +435,20 @@ export default class App extends Component {
                   roundtrip of latency.
                 </p>
               }
+              active={this.hasDirective(Directives["immutable"])}
+              fields={active => [
+                <label key={0}>
+                  <input
+                    name={Directives["immutable"]}
+                    type="checkbox"
+                    checked={active}
+                    onChange={() =>
+                      this.toggleDirective(Directives["immutable"])
+                    }
+                  />
+                  immutable
+                </label>
+              ]}
             />
             <Fieldset
               title={Directives["stale-while-revalidate"]}
@@ -528,6 +460,20 @@ export default class App extends Component {
                   is willing to accept a stale response.
                 </p>
               }
+              active={this.hasDirective(Directives["stale-while-revalidate"])}
+              fields={active => [
+                <label key={0}>
+                  <input
+                    name={Directives["stale-while-revalidate"]}
+                    type="checkbox"
+                    checked={active}
+                    onChange={() =>
+                      this.toggleDirective(Directives["stale-while-revalidate"])
+                    }
+                  />
+                  stale-while-revalidate
+                </label>
+              ]}
             />
           </form>
           <div className="Result" onClick={() => this.copyToClipboard()}>
@@ -587,7 +533,9 @@ export default class App extends Component {
                   language="javascript"
                   style={docco}
                 >
-                  {libraryCode[this.state.codeLibrary](this.state.directives)}
+                  {libraryCode[this.state.codeLibrary](
+                    createHeaderArg(this.state.directives)
+                  )}
                 </SyntaxHighlighter>
               </div>
             </div>
