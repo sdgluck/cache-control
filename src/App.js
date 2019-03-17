@@ -124,7 +124,7 @@ export default class App extends React.Component {
           <ul className="Menu">
             <li className="Menu__item">
               <a
-                title="Copy a shareable link for this header configuration"
+                title="Copy a shareable link of the current header configuration to your clipboard"
                 href={shareUrl}
                 onClick={evt => {
                   evt.preventDefault();
@@ -137,7 +137,7 @@ export default class App extends React.Component {
             <li className="Menu__item">
               <button
                 className="Anchor"
-                title="Copy the header text to your clipboard"
+                title="Copy the current header text to your clipboard"
                 onClick={() => this.copyToClipboard()}
               >
                 Copy
