@@ -124,7 +124,7 @@ export default class App extends Component {
     return this.state.directives.find(d => d.name === directive);
   }
 
-  directiveArg(name, argIdx) {
+  getDirectiveArg(name, argIdx) {
     const directive = this.state.directives.find(d => d.name === name);
     if (!directive) {
       return null;
@@ -298,7 +298,7 @@ export default class App extends Component {
                     type="number"
                     min={0}
                     step={60}
-                    value={this.directiveArg(Directives["max-age"], 0)}
+                    value={this.getDirectiveArg(Directives["max-age"], 0)}
                     onChange={evt => {
                       if (!active) {
                         return;
@@ -354,7 +354,7 @@ export default class App extends Component {
                     type="number"
                     min={0}
                     step={60}
-                    value={this.directiveArg(Directives["s-maxage"], 0)}
+                    value={this.getDirectiveArg(Directives["s-maxage"], 0)}
                     onChange={evt => {
                       if (!active) {
                         return;
