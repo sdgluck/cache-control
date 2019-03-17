@@ -1,32 +1,15 @@
 /* eslint-disable react/jsx-no-comment-textnodes */
-import React, { Component, useState } from "react";
+import React, { useState } from "react";
 import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import copyToClipboard from "clipboard-copy";
 import SyntaxHighlighter from "react-syntax-highlighter";
 
 import libraryCode from "./lib-code";
+import { Directives } from "./constants";
 import { readInDirectives, createHeaderArg } from "./util";
 
 import "normalize.css/normalize.css";
 import "./index.css";
-
-const Directives = {
-  public: "public",
-  private: "private",
-  "max-age": "max-age",
-  "s-maxage": "s-maxage",
-  "no-cache": "no-cache",
-  "only-if-cached": "only-if-cached",
-  "max-stale": "max-stale",
-  "min-fresh": "min-fresh",
-  "stale-while-revalidate": "stale-while-revalidate",
-  "stale-if-error": "stale-if-error",
-  "must-revalidate": "must-revalidate",
-  "proxy-revalidate": "proxy-revalidate",
-  immutable: "immutable",
-  "no-store": "no-store",
-  "no-transform": "no-transform"
-};
 
 const directivePriorities = Object.keys(Directives);
 
@@ -69,7 +52,7 @@ function Fieldset({ title, description, active, fields = () => {} }) {
   );
 }
 
-export default class App extends Component {
+export default class App extends React.Component {
   state = {
     showLibraryCode: true,
     codeLibrary: "express",

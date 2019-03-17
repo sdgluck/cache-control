@@ -1,35 +1,35 @@
 export default {
-  express: header => `\
+  express: directives => `\
 // for all responses
 app.use((req, res, next) => {
-  res.set('Cache-Control', '${header}');
+  res.set('Cache-Control', '${directives}');
   next();
 });
 
 // for single response
-res.set('Cache-Control', '${header}');`,
+res.set('Cache-Control', '${directives}');`,
 
-  koa: header => `\
+  koa: directives => `\
 // for all responses
 app.use(async (ctx, next) => {
-  ctx.set('Cache-Control', '${header}');
+  ctx.set('Cache-Control', '${directives}');
   await next();
 });
 
 // for single response
-ctx.set('Cache-Control', '${header}');`,
+ctx.set('Cache-Control', '${directives}');`,
 
-  hapi: header => `\
+  hapi: directives => `\
 // for all responses
 server.ext('onPreResponse', (request, reply) => {
-  request.response.header('Cache-Control', '${header}');
+  request.response.header('Cache-Control', '${directives}');
   reply();
 });
 
 // for single response
-response.header('Cache-Control', '${header}');`,
+response.header('Cache-Control', '${directives}');`,
 
-  "hapi v17": header => `\
+  "hapi v17": directives => `\
 // for all responses
 server.route({  
   method: 'GET',
@@ -37,21 +37,21 @@ server.route({
   handler: (request, h) => {
     const response = h.response();
     response.code(200);
-    response.header('Cache-Control', '${header}');
+    response.header('Cache-Control', '${directives}');
     return response;
   }
 });
 
 // for single response
-response.header('Cache-Control', '${header}');`,
+response.header('Cache-Control', '${directives}');`,
 
-  fastify: header => `\
+  fastify: directives => `\
 // for all responses
 fastify.use('*', (request, reply, next) => {
-  reply.header('Cache-Control', '${header}');
+  reply.header('Cache-Control', '${directives}');
   next();
 });
 
 // for single reponse
-reply.header('Cache-Control', '${header}')`
+reply.header('Cache-Control', '${directives}')`
 };
