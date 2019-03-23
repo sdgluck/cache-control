@@ -45,6 +45,16 @@ function Fieldset({
       <div className="Fieldset__body" style={styles.hide(!open)}>
         <div className="Fieldset__description">
           <p>{DirectiveDescriptions[title]}</p>
+          {enables.length ? (
+            <p>
+              <strong>Requires</strong>: {enables.map(d => d.name).join(", ")}
+            </p>
+          ) : null}
+          {disables.length ? (
+            <p>
+              <strong>Cannot be used with</strong>: {disables.join(", ")}
+            </p>
+          ) : null}
         </div>
         <div className="Fieldset__fields">
           <label key={0}>
