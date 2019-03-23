@@ -118,9 +118,19 @@ export default class App extends React.Component {
   state = {
     showLibraryCode: true,
     codeLibrary: "express",
-    directives: readInDirectives(),
+    directives: [],
     popupMessage: null
   };
+
+  componentDidMount() {
+    this.setState({
+      directives: readInDirectives({
+        onError: () => {
+          this.showPopup("Bad share url :(");
+        }
+      })
+    });
+  }
 
   setDirectives(directives) {
     this.setState({

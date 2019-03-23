@@ -29,7 +29,7 @@ export function createHeaderArg(
   return headerArg.length ? (quotes ? `'${headerArg}'` : headerArg) : fallback;
 }
 
-export function readInDirectives() {
+export function readInDirectives({ onError = () => {} } = {}) {
   try {
     const parts = window.location.search.replace(/^\?/, "").split("&");
     const params = parts.reduce((params, part) => {
@@ -38,6 +38,7 @@ export function readInDirectives() {
     }, {});
     return params.s ? JSON.parse(atob(params.s)) : [];
   } catch (err) {
+    onError(err);
     return [];
   }
 }
