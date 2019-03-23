@@ -54,7 +54,7 @@ function Directive({ directive }) {
     }
   }
   arg = arg !== null ? " " + arg.toString() : "";
-  return `  ${directive.name}${directive.arg !== null ? " " + arg : ""}`;
+  return `  ${directive.name}${directive.arg !== null ? arg : ""}`;
 }
 
 function TimeInput({ name, value, time, onArgChange, onTimeChange, active }) {
