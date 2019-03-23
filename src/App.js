@@ -438,7 +438,7 @@ export default class App extends React.Component {
                     })
                   }
                 >
-                  Router Library Code{" "}
+                  Library Code{" "}
                   <span>({this.state.showLibraryCode ? "hide" : "show"})</span>
                 </div>
                 <div>
