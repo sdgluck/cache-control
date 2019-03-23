@@ -4,9 +4,9 @@ import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import copyToClipboard from "clipboard-copy";
 import SyntaxHighlighter from "react-syntax-highlighter";
 
-import libraryCode from "./lib-code";
-import { Directives } from "./constants";
-import { readInDirectives, createHeaderArg } from "./util";
+import { libraryCode, libraryComment, libraryLanguage } from "./lib-code";
+import { Times, Directives } from "./constants";
+import { styles, readInDirectives, createHeaderArg } from "./util";
 
 import "normalize.css/normalize.css";
 import "./index.css";
@@ -21,26 +21,18 @@ if (!initialOpenDirectives.length) {
   initialOpenDirectives = directivePriorities.slice(0, 4);
 }
 
-const styles = {
-  hide: hide => (hide ? { display: "none" } : {})
-};
-
-function Directive({ name, args = [] }) {
-  return (
-    <span className="HeaderDirective">
-      {"  "}
-      {name}
-      {args.length ? " " + args.join(" ") : ""}
-    </span>
-  );
-}
-
 function Fieldset({ title, description, active, fields = () => {} }) {
   const [open, setOpen] = useState(initialOpenDirectives.includes(title));
 
   return (
     <div className="Fieldset">
-      <div className="Fieldset__header" onClick={() => setOpen(!open)}>
+      <div
+        className="Fieldset__header"
+        onClick={() => setOpen(!open)}
+        title={`Click to ${
+          open ? "hide" : "show"
+        } "${title}" directive options`}
+      >
         <span>{title}</span>
         <span className="Fieldset__header-open-icon">{open ? "–" : "+"}</span>
       </div>
@@ -52,11 +44,82 @@ function Fieldset({ title, description, active, fields = () => {} }) {
   );
 }
 
+function Directive({ directive }) {
+  let arg = directive.arg;
+  if (arg !== null) {
+    if (directive.time === Times.days) {
+      arg *= 86400;
+    } else if (directive.time === Times.hours) {
+      arg *= 3600;
+    }
+  }
+  arg = arg !== null ? " " + arg.toString() : "";
+  return `  ${directive.name}${directive.arg !== null ? " " + arg : ""}`;
+}
+
+function TimeInput({ name, value, time, onArgChange, onTimeChange, active }) {
+  let step = 60;
+
+  if (time !== Times.secs) {
+    step = 1;
+  }
+
+  return (
+    <div className="NumberRadioInput" key={1} style={styles.hide(!active)}>
+      <label>
+        <br />
+        <input
+          name={name + "_arg"}
+          type="number"
+          min={0}
+          step={step}
+          value={value}
+          onChange={onArgChange}
+        />
+      </label>
+      <label className="NumberRadio__radio--first">
+        <input
+          className="Radio"
+          name={name + "_time"}
+          type="radio"
+          value={Times.secs}
+          onChange={onTimeChange}
+          checked={time === Times.secs}
+        />
+        <span>secs</span>
+      </label>
+      <label>
+        <input
+          className="Radio"
+          name={name + "_time"}
+          type="radio"
+          value={Times.hours}
+          onChange={onTimeChange}
+          checked={time === Times.hours}
+        />
+        <span>hours</span>
+      </label>
+      <label className="NumberRadio__radio--last">
+        <input
+          className="Radio"
+          name={name + "_time"}
+          type="radio"
+          value={Times.days}
+          onChange={onTimeChange}
+          checked={time === Times.days}
+        />
+        <span>days</span>
+      </label>
+    </div>
+  );
+}
+
 export default class App extends React.Component {
   state = {
     showLibraryCode: true,
     codeLibrary: "express",
-    directives: readInDirectives()
+    directives: readInDirectives(),
+    highlightDirective: null
   };
 
   setDirectives(directives) {
@@ -71,49 +134,99 @@ export default class App extends React.Component {
   }
 
   hasDirective(directive) {
-    return this.state.directives.find(d => d.name === directive);
+    return !!this.state.directives.find(d => d.name === directive);
   }
 
-  toggleDirective(name, args = [], disables = []) {
+  toggleDirective(name, arg = null, disables = []) {
     const active = this.hasDirective(name);
     let directives = this.state.directives;
     if (active) {
       directives = directives.filter(d => d.name !== name);
     } else {
       directives = directives.filter(d => !disables.includes(d.name));
-      directives.push({ name, args });
+      directives.push({ name, arg, time: Times.secs });
     }
     this.setDirectives(directives);
   }
 
-  updateDirecteArg(evt, name, argIdx) {
+  updateDirectiveArg(evt, name) {
     const active = this.hasDirective(name);
     if (!active) {
       return;
     }
+
     const directives = this.state.directives;
     const directive = directives.find(d => d.name === name);
-    directive.args[argIdx] = evt.target.value;
+    directive.arg = evt.target.value;
     this.setDirectives(directives);
   }
 
-  getDirectiveArg(name, argIdx) {
+  updateDirectiveTime(evt, name) {
+    const active = this.hasDirective(name);
+    if (!active) {
+      return;
+    }
+
+    const directives = this.state.directives;
+    const directive = directives.find(d => d.name === name);
+    const newTime = evt.target.value;
+    const oldTime = directive.time;
+    const oldTimeArg = directive.arg;
+    let timeArg = oldTimeArg;
+
+    if (oldTime === Times.secs) {
+      if (newTime === Times.days) {
+        timeArg = oldTimeArg / 86400;
+      } else if (newTime === Times.hours) {
+        timeArg = oldTimeArg / 3600;
+      }
+    } else if (oldTime === Times.hours) {
+      if (newTime === Times.secs) {
+        timeArg = oldTimeArg * 3600;
+      } else if (newTime === Times.days) {
+        timeArg = oldTimeArg / 24;
+      }
+    } else if (oldTime === Times.days) {
+      if (newTime === Times.secs) {
+        timeArg = oldTimeArg * 86400;
+      } else if (newTime === Times.hours) {
+        timeArg = oldTimeArg * 24;
+      }
+    }
+
+    directive.time = newTime;
+    directive.arg = Math.max(0, Math.round(timeArg));
+
+    this.setDirectives(directives);
+  }
+
+  getDirectiveTime(name) {
+    const directive = this.state.directives.find(d => d.name === name);
+    if (!directive) {
+      return false;
+    }
+    return directive.time;
+  }
+
+  getDirectiveArg(name) {
     const directive = this.state.directives.find(d => d.name === name);
     if (!directive) {
       return null;
     }
-    return (directive.args && directive.args[argIdx]) || "";
+    return directive.arg || "";
   }
 
   copyToClipboard() {
-    copyToClipboard("Cache-Control: " + createHeaderArg(this.state.directives));
+    copyToClipboard(
+      "Cache-Control: " +
+        createHeaderArg(this.state.directives, false, false, "")
+    );
   }
 
   render() {
     const domain = window.location.protocol + "//" + window.location.host;
-    const shareUrl = `${domain}?s=${btoa(
-      JSON.stringify(this.state.directives)
-    )}`;
+    const shareSearch = `?s=${btoa(JSON.stringify(this.state.directives))}`;
+    const shareUrl = `${domain}${shareSearch}`;
 
     return (
       <div className="App">
@@ -165,11 +278,9 @@ export default class App extends React.Component {
                     type="checkbox"
                     checked={active}
                     onChange={() =>
-                      this.toggleDirective(
-                        Directives.public,
-                        [],
-                        [Directives.private]
-                      )
+                      this.toggleDirective(Directives.public, null, [
+                        Directives.private
+                      ])
                     }
                   />
                   public
@@ -193,11 +304,9 @@ export default class App extends React.Component {
                     type="checkbox"
                     checked={active}
                     onChange={() =>
-                      this.toggleDirective(
-                        Directives.private,
-                        [],
-                        [Directives.public]
-                      )
+                      this.toggleDirective(Directives.private, null, [
+                        Directives.public
+                      ])
                     }
                   />
                   private
@@ -221,26 +330,24 @@ export default class App extends React.Component {
                     type="checkbox"
                     checked={active}
                     onChange={() =>
-                      this.toggleDirective(Directives["max-age"], [
-                        60 * 60 * 24
-                      ])
+                      this.toggleDirective(Directives["max-age"], 60 * 60 * 24)
                     }
                   />
                   max-age
                 </label>,
-                <label key={1} style={styles.hide(!active)}>
-                  <br />
-                  <input
-                    name={Directives["max-age"] + "_arg0"}
-                    type="number"
-                    min={0}
-                    step={60}
-                    value={this.getDirectiveArg(Directives["max-age"], 0)}
-                    onChange={evt =>
-                      this.updateDirecteArg(evt, Directives["max-age"], 0)
-                    }
-                  />
-                </label>
+                <TimeInput
+                  key={1}
+                  active={this.hasDirective(Directives["max-age"])}
+                  name={Directives["max-age"]}
+                  value={this.getDirectiveArg(Directives["max-age"]) || 0}
+                  onArgChange={evt =>
+                    this.updateDirectiveArg(evt, Directives["max-age"])
+                  }
+                  onTimeChange={evt =>
+                    this.updateDirectiveTime(evt, Directives["max-age"])
+                  }
+                  time={this.getDirectiveTime(Directives["max-age"])}
+                />
               ]}
             />
             <Fieldset
@@ -260,26 +367,24 @@ export default class App extends React.Component {
                     type="checkbox"
                     checked={active}
                     onChange={() =>
-                      this.toggleDirective(Directives["s-maxage"], [
-                        60 * 60 * 24
-                      ])
+                      this.toggleDirective(Directives["s-maxage"], 60 * 60 * 24)
                     }
                   />
                   s-maxage
                 </label>,
-                <label key={1} style={styles.hide(!active)}>
-                  <br />
-                  <input
-                    name={Directives["s-maxage"] + "_arg0"}
-                    type="number"
-                    min={0}
-                    step={60}
-                    value={this.getDirectiveArg(Directives["s-maxage"], 0)}
-                    onChange={evt =>
-                      this.updateDirecteArg(evt, Directives["s-maxage"], 0)
-                    }
-                  />
-                </label>
+                <TimeInput
+                  key={1}
+                  active={this.hasDirective(Directives["s-maxage"])}
+                  name={Directives["s-maxage"]}
+                  value={this.getDirectiveArg(Directives["s-maxage"]) || 0}
+                  onArgChange={evt =>
+                    this.updateDirectiveArg(evt, Directives["s-maxage"])
+                  }
+                  onTimeChange={evt =>
+                    this.updateDirectiveTime(evt, Directives["s-maxage"])
+                  }
+                  time={this.getDirectiveTime(Directives["s-maxage"])}
+                />
               ]}
             />
             <Fieldset
@@ -463,10 +568,19 @@ export default class App extends React.Component {
             <div className="ResultHeader">
               <pre className="ResultHeader__header">
                 Cache-Control:{`\n`}
-                {this.state.directives.map(directive => {
-                  return <Directive key={directive.name} {...directive} />;
-                })}
-                {!this.state.directives.length ? (
+                {this.state.directives.length ? (
+                  this.state.directives.map((d, i) => {
+                    return (
+                      <React.Fragment key={d.name}>
+                        <Directive directive={d} />
+                        {this.state.directives.length > 1 &&
+                        i !== this.state.directives.length - 1
+                          ? ",\n"
+                          : ""}
+                      </React.Fragment>
+                    );
+                  })
+                ) : (
                   <span className="ResultHeader__placeholder">
                     {"  "}// configure directives
                     <br />
@@ -474,7 +588,7 @@ export default class App extends React.Component {
                     <br />
                     {"  "}// on the left
                   </span>
-                ) : null}
+                )}
               </pre>
             </div>
             <div className="ResultCode">
@@ -513,11 +627,16 @@ export default class App extends React.Component {
                   showLineNumbers
                   lineNumberStyle={{ color: "lightgrey" }}
                   className="ResultCode__code"
-                  language="javascript"
+                  language={libraryLanguage(this.state.codeLibrary)}
                   style={docco}
                 >
                   {libraryCode[this.state.codeLibrary](
-                    createHeaderArg(this.state.directives)
+                    createHeaderArg(
+                      this.state.directives,
+                      false,
+                      true,
+                      libraryComment(this.state.codeLibrary)
+                    )
                   )}
                 </SyntaxHighlighter>
               </div>
@@ -548,13 +667,13 @@ export default class App extends React.Component {
             </span>
           </div>
           <div className="Footer__credit">
-            created by{" "}
             <a
-              href="https://github.com/sdgluck"
-              target="_blank"
-              rel="noopener noreferrer"
+              class="github-button"
+              href="https://github.com/sdgluck/cache-control"
+              data-icon="octicon-star"
+              aria-label="Star sdgluck/cache-control on GitHub"
             >
-              sdgluck
+              Star
             </a>
           </div>
         </footer>

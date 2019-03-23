@@ -15,3 +15,9 @@ export const Directives = {
   "no-store": "no-store",
   "no-transform": "no-transform"
 };
+
+export const Times = {
+  secs: "secs",
+  hours: "hours",
+  days: "days"
+};

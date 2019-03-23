@@ -9,6 +9,7 @@ body,
   height: 100%;
   font-family: sans-serif;
   color: var(--colour-grey);
+  font-size: 12px;
 }
 
 * {
@@ -126,11 +127,81 @@ a:hover,
   border-radius: 5px;
   background-color: lightgrey;
   z-index: 0;
+  border-bottom: 1px solid darkgrey;
+}
+
+.Fieldset__description {
+  border-bottom: 1px solid darkgrey;
 }
 
 .Fieldset__fields {
-  border-top: 1px solid white;
+  height: 40px;
+  border-top: 1px solid ghostwhite;
   padding: 10px 0 5px 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.Radio {
+  position: fixed;
+  top: -999px;
+  left: -999px;
+}
+
+label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+input[type="number"] {
+  height: 25px;
+  width: 100px;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  border: 1px solid var(--colour-grey);
+  padding-left: 5px;
+}
+
+input[type="checkbox"] {
+  height: 20px;
+  width: 20px;
+  margin-right: 5px;
+}
+
+input[type="radio"] ~ span {
+  display: inline-block;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  padding: 0 5px;
+  background-color: var(--colour-grey);
+  color: white;
+  cursor: pointer;
+}
+
+input[type="radio"] ~ span:hover {
+  color: salmon;
+}
+
+input[type="radio"]:checked ~ span {
+  color: pink;
+}
+
+.NumberRadioInput {
+  display: flex;
+  flex-direction: row;
+}
+
+.NumberRadio__radio--first span {
+  padding-left: 4px;
+}
+
+.NumberRadio__radio--last span {
+  padding-right: 4px;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
 }
 
 .Result {
@@ -138,14 +209,14 @@ a:hover,
   display: grid;
   grid-template-rows: 2fr auto;
   grid-template-areas: "result_header" "result_code";
-  background-color: var(--colour-grey);
+  background-color: lightgrey;
 }
 
 .ResultHeader {
   padding: 5px;
   grid-area: result_header;
   margin-top: -40px;
-  color: pink;
+  color: #f66d85;
   font-size: 3rem;
   align-items: center;
   justify-content: center;
@@ -208,6 +279,7 @@ a:hover,
 }
 
 .ResultCode__code {
+  font-size: 1.25rem;
   background-color: white;
   margin: 0;
 }
