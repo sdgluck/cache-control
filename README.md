@@ -4,8 +4,6 @@
 </strong>
 </h1>
 
-<hr/>
-
 - Build & learn about the Cache-Control header and its directives
 - Generates example library code for setting headers, e.g. nginx, express, & others
 
