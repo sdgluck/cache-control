@@ -6,5 +6,6 @@
 
 - Build & learn about the Cache-Control header and its directives
 - Generates example library code for setting headers, e.g. nginx, express, & others
+- Header descriptions taken from [MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control)
 
 <img src="https://raw.githubusercontent.com/sdgluck/cache-control/master/screenshot.jpg" />
