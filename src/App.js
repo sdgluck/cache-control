@@ -119,7 +119,7 @@ export default class App extends React.Component {
     showLibraryCode: true,
     codeLibrary: "express",
     directives: readInDirectives(),
-    highlightDirective: null
+    popupMessage: null
   };
 
   setDirectives(directives) {
@@ -223,6 +223,16 @@ export default class App extends React.Component {
     );
   }
 
+  showPopup(popupMessage) {
+    if (this.popupTimeout) {
+      clearTimeout(this.popupTimeout);
+    }
+    this.setState({ popupMessage });
+    this.popupTimeout = setTimeout(() => {
+      this.setState({ popupMessage: null });
+    }, 2000);
+  }
+
   render() {
     const domain = window.location.protocol + "//" + window.location.host;
     const shareSearch = `?s=${btoa(JSON.stringify(this.state.directives))}`;
@@ -230,6 +240,11 @@ export default class App extends React.Component {
 
     return (
       <div className="App">
+        <div
+          className={`Popup ${this.state.popupMessage ? "Popup--show" : ""}`}
+        >
+          {this.state.popupMessage}
+        </div>
         <header className="Header">
           <div>
             <h1 className="Header__heading">Cache-Control Header Builder</h1>
@@ -242,6 +257,7 @@ export default class App extends React.Component {
                 onClick={evt => {
                   evt.preventDefault();
                   copyToClipboard(shareUrl);
+                  this.showPopup("Link copied to clipboard");
                 }}
               >
                 Share
@@ -251,7 +267,10 @@ export default class App extends React.Component {
               <button
                 className="Anchor"
                 title="Copy the current header text to your clipboard"
-                onClick={() => this.copyToClipboard()}
+                onClick={() => {
+                  this.copyToClipboard();
+                  this.showPopup("Header copied to clipboard");
+                }}
               >
                 Copy
               </button>

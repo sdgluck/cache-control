@@ -342,3 +342,18 @@ input[type="radio"]:checked ~ span {
   display: inline-block;
   margin-right: 5px;
 }
+
+.Popup {
+  position: fixed;
+  top: 45px;
+  right: 5px;
+  background-color: black;
+  color: white;
+  padding: 5px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.Popup--show {
+  opacity: 1;
+}
