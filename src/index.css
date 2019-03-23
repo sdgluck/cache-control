@@ -94,6 +94,42 @@ a:hover,
   grid-template-areas: "config result";
 }
 
+@media screen and (max-width: 720px) {
+  .Main {
+    grid-template-rows: auto 3fr;
+    grid-template-columns: 1fr;
+    grid-template-areas: "result" "config";
+  }
+
+  .Result {
+    border-bottom: 1px solid grey;
+  }
+
+  .ResultCode {
+    display: none;
+  }
+
+  body .ResultHeader {
+    margin-top: 0;
+  }
+
+  .Fieldset {
+    font-size: 1.25rem;
+  }
+
+  .Fieldset__header {
+    height: 40px;
+  }
+
+  body .ResultHeader__placeholder--mobile {
+    display: block;
+  }
+
+  body .ResultHeader__placeholder--desktop {
+    display: none;
+  }
+}
+
 .Config {
   grid-area: config;
   overflow: auto;
@@ -221,6 +257,14 @@ input[type="radio"]:checked ~ span {
   align-items: center;
   justify-content: center;
   display: flex;
+}
+
+.ResultHeader__placeholder--mobile {
+  display: none;
+}
+
+.ResultHeader__placeholder--desktop {
+  display: block;
 }
 
 @media screen and (max-width: 1200px) {

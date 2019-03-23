@@ -581,13 +581,20 @@ export default class App extends React.Component {
                     );
                   })
                 ) : (
-                  <span className="ResultHeader__placeholder">
-                    {"  "}// configure directives
-                    <br />
-                    {"  "}// using the panel
-                    <br />
-                    {"  "}// on the left
-                  </span>
+                  <>
+                    <span className="ResultHeader__placeholder ResultHeader__placeholder--desktop">
+                      {"  "}// configure directives
+                      <br />
+                      {"  "}// using the panel
+                      <br />
+                      {"  "}// on the left
+                    </span>
+                    <span className="ResultHeader__placeholder ResultHeader__placeholder--mobile">
+                      {"  "}// configure directives
+                      <br />
+                      {"  "}// using the panel below
+                    </span>
+                  </>
                 )}
               </pre>
             </div>
@@ -668,7 +675,7 @@ export default class App extends React.Component {
           </div>
           <div className="Footer__credit">
             <a
-              class="github-button"
+              className="github-button"
               href="https://github.com/sdgluck/cache-control"
               data-icon="octicon-star"
               aria-label="Star sdgluck/cache-control on GitHub"
